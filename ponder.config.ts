@@ -25,8 +25,8 @@ export default createConfig({
         event: giftCreatedEvent,
         parameter: 'giftId',
       },
-
       startBlock: 59,
+      //182
     },
     GiftFactory: {
       network: 'appchain',
