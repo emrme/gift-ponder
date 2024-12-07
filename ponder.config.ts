@@ -15,6 +15,7 @@ export default createConfig({
       transport: http(process.env.PONDER_RPC_URL_466),
     },
   },
+
   contracts: {
     Gift: {
       network: 'appchain',
