@@ -1,41 +1,37 @@
-import { createConfig } from "@ponder/core";
-import { parseAbiItem } from "abitype";
-import { http } from "viem";
+import { createConfig } from '@ponder/core';
+import { parseAbiItem } from 'abitype';
+import { http } from 'viem';
+import { GiftFactoryAbi } from './abis/gift-factory-abi';
+import { GiftNftAbi } from './abis/gift-nft-abi';
 
-import { LlamaCoreAbi } from "./abis/LlamaCoreAbi";
-import { LlamaPolicyAbi } from "./abis/LlamaPolicyAbi";
-
-const llamaFactoryEvent = parseAbiItem(
-  "event LlamaInstanceCreated(address indexed deployer, string indexed name, address llamaCore, address llamaExecutor, address llamaPolicy, uint256 chainId)",
+const giftCreatedEvent = parseAbiItem(
+  'event GiftCreated(address indexed giftId, address indexed sender, address indexed recipient, bool isPublic, uint256 claimEndTimestamp, address[] tokenAddresses, uint256[] tokenAmounts, string giftMessage)'
 );
 
 export default createConfig({
   networks: {
-    sepolia: {
-      chainId: 11155111,
-      transport: http(process.env.PONDER_RPC_URL_11155111),
+    appchain: {
+      chainId: 466,
+      transport: http(process.env.PONDER_RPC_URL_466),
     },
   },
   contracts: {
-    LlamaCore: {
-      network: "sepolia",
-      abi: LlamaCoreAbi,
+    Gift: {
+      network: 'appchain',
+      abi: GiftNftAbi,
       factory: {
-        address: "0xFf5d4E226D9A3496EECE31083a8F493edd79AbEB",
-        event: llamaFactoryEvent,
-        parameter: "llamaCore",
+        address: '0x46d06cdFF9C343433111EBA88A0a5F7C3658Ec9c',
+        event: giftCreatedEvent,
+        parameter: 'giftId',
       },
-      startBlock: 4121269,
+
+      startBlock: 59,
     },
-    LlamaPolicy: {
-      network: "sepolia",
-      abi: LlamaPolicyAbi,
-      factory: {
-        address: "0xFf5d4E226D9A3496EECE31083a8F493edd79AbEB",
-        event: llamaFactoryEvent,
-        parameter: "llamaPolicy",
-      },
-      startBlock: 4121269,
+    GiftFactory: {
+      network: 'appchain',
+      address: '0x46d06cdFF9C343433111EBA88A0a5F7C3658Ec9c',
+      abi: GiftFactoryAbi,
+      startBlock: 59,
     },
   },
 });

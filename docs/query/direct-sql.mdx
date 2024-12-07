@@ -1,0 +1,172 @@
+---
+title: "Direct SQL"
+description: "How to query the Ponder database"
+---
+
+import { Callout, FileTree, Steps } from "nextra/components";
+
+# Direct SQL queries
+
+This guide describes how to query the database directly using Drizzle or psql.
+
+<Callout type="warning">
+  Don't write to onchain tables from external clients. Only write to onchain
+  tables from indexing functions.
+</Callout>
+
+<Callout type="info">
+  Direct SQL queries against PGlite are
+  [possible](https://github.com/supabase-community/pg-gateway?tab=readme-ov-file#pglite),
+  but the methods described here do not work out of the box.
+</Callout>
+
+## Drizzle
+
+The `onchainTable` objects exported by `ponder.schema.ts` are valid Drizzle table objects. You can import them from TypeScript files outside the Ponder `src/` directory and use them with the Drizzle query builder.
+
+<Callout type="info">
+  When you use `onchainTable` objects externally, they query the live views
+  automatically. [Read more](/docs/api-reference/database) about table names and
+  live views.
+</Callout>
+
+Here's a script that creates a Drizzle client and runs a query against the Ponder tables. Be sure to connect to the database using the same `DATABASE_URL` as the Ponder app.
+
+```ts filename="query.ts"
+import { drizzle } from "drizzle-orm/node-postgres";
+import * as schema from "../../ponder/ponder.schema";
+
+const db = drizzle(process.env.DATABASE_URL, { schema, casing: "snake_case" });
+
+// Select
+const oldAccounts = await db
+  .select()
+  .from(schema.accounts)
+  .orderBy(asc(schema.accounts.createdAt))
+  .limit(100);
+
+// Query
+const whalesWithTransfers = await db.query.accounts.findMany({
+  where: (accounts, { eq }) => eq(accounts.balance, 1_000_000n),
+  with: { transferEvents: true },
+});
+```
+
+## psql
+
+You can also use [psql](https://www.postgresql.org/docs/current/app-psql.html), a terminal-based Postgres front-end, to query the database from the command line.
+
+<Steps>
+
+### Connection string
+
+Connect using the same connection string that your Ponder app uses.
+
+```bash filename="shell"
+psql 'postgresql://username:password@localhost:5432/your_database'
+```
+
+### Display tables
+
+Use the `\dt` command to list all tables in the `public` schema. If you are using a schema other than `public`, include the pattern.
+
+<div className="code-columns">
+
+```bash filename="psql"
+\dt
+```
+
+```bash filename="psql"
+\dt my_schema.*
+```
+
+</div>
+
+Notice that the tables have an unfamiliar four-character prefix. This prefix mechanism is used to avoid table name conflicts during hot reloads and redeployments.
+
+The `reorg` tables are used by Ponder internally during reorg reconciliation, and the `_ponder_meta` table is used to store metadata about the database state.
+
+```plaintext filename="psql (result)"
+                    List of relations
+ Schema | Name                        | Type  | Owner
+--------+-----------------------------+-------+----------
+ public | b83f__accounts              | table | username
+ public | b83f__transfer_events       | table | username
+ public | b83f_reorg__accounts        | table | username
+ public | b83f_reorg__transfer_events | table | username
+ public | _ponder_meta                | table | username
+(5 rows)
+```
+
+Querying the tables directly is not recommended, because the table names are subject to change. To work around this problem, use the **live views** instead.
+
+### Display views
+
+Now, for a more intuitive experience, run the `\dv` command to list all views in the schema.
+
+<div className="code-columns">
+
+```bash filename="psql"
+\dv
+```
+
+```bash filename="psql"
+\dv my_schema.*
+```
+
+</div>
+
+The `accounts` and `transfer_events` views are **live views**. They proxy queries to the underlying `b83f__accounts` and `b83f__transfer_events` tables. Read more about [live views](/docs/production/deploy#table-names-and-live-views).
+
+```plaintext filename="psql (result)"
+            List of relations
+ Schema | Name            | Type  | Owner
+--------+-----------------+-------+----------
+ public | accounts        | view | username
+ public | transfer_events | view | username
+(2 rows)
+```
+
+### Select rows
+
+Select a few rows from the `accounts` view.
+
+```sql filename="psql"
+SELECT * FROM accounts LIMIT 5;
+```
+
+```plaintext filename="psql (result)"
+                  address                   |         balance         |
+--------------------------------------------+-------------------------+
+ 0xf73fe15cfb88ea3c7f301f16ade3c02564aca407 | 10000000000000000000000 |
+ 0xb0659bc97ed61b37d6b140f3e12a41d471781714 | 20000000000000000000000 |
+ 0x52932f5b2767d917c3134140168f2176c94e8b2c | 10000000000000000000000 |
+ 0xfb7ca75b3ce099120602b5ab7104cff030ee43f8 |                       0 |
+ 0x9ccc6c5a9d25429f55ad9af6363c1c4f16b179ad |  7000000000000000000000 |
+(5 rows)
+```
+
+### Aggregate data
+
+Find the total number of transfers sent to each account.
+
+```sql filename="psql"
+SELECT "to", COUNT(*) AS transfer_count
+  FROM transfer_events
+  GROUP BY "to"
+  ORDER BY transfer_count DESC
+  LIMIT 5;
+```
+
+```plaintext filename="psql (result)"
+                     to                     | transfer_count
+--------------------------------------------+----------------
+ 0x5d752f322befb038991579972e912b02f61a3dda |           2342
+ 0x1337f7970e8399ccbc625647fce58a9dada5aa66 |            313
+ 0x9726041047644626468922598128349778349982 |            306
+ 0x27239549dd40e1d60f5b80b0c4196923745b1fd2 |            256
+ 0x450638daf0caedbdd9f8cb4a41fa1b24788b123e |            238
+(5 rows)
+```
+
+</Steps>
