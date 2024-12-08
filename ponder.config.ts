@@ -10,50 +10,28 @@ const giftCreatedEvent = parseAbiItem(
 
 export default createConfig({
   networks: {
-    appchain: {
-      chainId: 466,
+    mainnet: {
+      chainId: Number(process.env.CHAIN_ID),
       transport: http(process.env.PONDER_RPC_URL_466),
-    },
-    'base-sepolia': {
-      chainId: 84532,
-      transport: http(process.env.PONDER_RPC_URL_84532),
     },
   },
 
   contracts: {
     Gift: {
-      network: {
-        appchain: {
-          factory: {
-            address: '0x46d06cdFF9C343433111EBA88A0a5F7C3658Ec9c',
-            event: giftCreatedEvent,
-            parameter: 'giftId',
-          },
-          startBlock: 59,
-        },
-        'base-sepolia': {
-          factory: {
-            address: '0xa562225397B382644a96a9122ee1c2f779B460e6',
-            event: giftCreatedEvent,
-            parameter: 'giftId',
-          },
-          startBlock: 16438562,
-        },
-      },
+      network: 'mainnet',
       abi: GiftNftAbi,
+      factory: {
+        address: process.env.GIFT_FACTORY_ADDRESS as `0x${string}`,
+        event: giftCreatedEvent,
+        parameter: 'giftId',
+      },
+      startBlock: Number(process.env.START_BLOCK),
     },
     GiftFactory: {
-      network: {
-        appchain: {
-          address: '0x46d06cdFF9C343433111EBA88A0a5F7C3658Ec9c',
-          startBlock: 59,
-        },
-        'base-sepolia': {
-          address: '0xa562225397B382644a96a9122ee1c2f779B460e6',
-          startBlock: 16438562,
-        },
-      },
+      network: 'mainnet',
+      address: process.env.GIFT_FACTORY_ADDRESS as `0x${string}`,
       abi: GiftFactoryAbi,
+      startBlock: Number(process.env.START_BLOCK),
     },
   },
 });
