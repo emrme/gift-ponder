@@ -14,25 +14,46 @@ export default createConfig({
       chainId: 466,
       transport: http(process.env.PONDER_RPC_URL_466),
     },
+    'base-sepolia': {
+      chainId: 84532,
+      transport: http(process.env.PONDER_RPC_URL_84532),
+    },
   },
 
   contracts: {
     Gift: {
-      network: 'appchain',
-      abi: GiftNftAbi,
-      factory: {
-        address: '0x46d06cdFF9C343433111EBA88A0a5F7C3658Ec9c',
-        event: giftCreatedEvent,
-        parameter: 'giftId',
+      network: {
+        appchain: {
+          factory: {
+            address: '0x46d06cdFF9C343433111EBA88A0a5F7C3658Ec9c',
+            event: giftCreatedEvent,
+            parameter: 'giftId',
+          },
+          startBlock: 59,
+        },
+        'base-sepolia': {
+          factory: {
+            address: '0xa562225397B382644a96a9122ee1c2f779B460e6',
+            event: giftCreatedEvent,
+            parameter: 'giftId',
+          },
+          startBlock: 16438562,
+        },
       },
-      startBlock: 59,
-      //182
+      abi: GiftNftAbi,
     },
     GiftFactory: {
-      network: 'appchain',
-      address: '0x46d06cdFF9C343433111EBA88A0a5F7C3658Ec9c',
+      network: {
+        appchain: {
+          address: '0x46d06cdFF9C343433111EBA88A0a5F7C3658Ec9c',
+          startBlock: 59,
+        },
+        'base-sepolia': {
+          address: '0xa562225397B382644a96a9122ee1c2f779B460e6',
+          startBlock: 16438562,
+        },
+      },
       abi: GiftFactoryAbi,
-      startBlock: 59,
     },
   },
 });
