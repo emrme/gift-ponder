@@ -12,7 +12,7 @@ export default createConfig({
   networks: {
     mainnet: {
       chainId: Number(process.env.CHAIN_ID),
-      transport: http(process.env.PONDER_RPC_URL_466),
+      transport: http(process.env.RPC_URL),
     },
   },
 
