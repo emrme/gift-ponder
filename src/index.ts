@@ -72,20 +72,21 @@ const getOrCreateUser = createMemoizedFunction(
   async (context: Context, address: Address) => {
     const normalizedAddress = address.toLowerCase() as `0x${string}`;
 
+    let _user = await context.db.find(user, { id: normalizedAddress });
+    if (_user) return _user;
+
     try {
-      const _user = await context.db.find(user, { id: normalizedAddress });
-      if (!_user) {
-        return await context.db.insert(user).values({
-          id: normalizedAddress,
-          address: normalizedAddress,
-        });
-      }
+      _user = await context.db.insert(user).values({
+        id: normalizedAddress,
+        address: normalizedAddress,
+      });
       return _user;
     } catch (error: any) {
-      // If we hit a unique constraint error, it means another concurrent operation
-      // created the user. Try to fetch it again.
-      if (error.message?.includes('Unique constraint failed')) {
-        const _user = await context.db.find(user, { id: normalizedAddress });
+      if (
+        error.message?.includes('unique constraint') ||
+        error.message?.includes('duplicate key')
+      ) {
+        _user = await context.db.find(user, { id: normalizedAddress });
         if (_user) return _user;
       }
       throw error;
